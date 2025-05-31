@@ -403,7 +403,11 @@ struct fz_stext_char
 	uint16_t flags;
 	uint32_t argb; /* sRGB hex color (alpha in top 8 bits, then r, then g, then b in low bits) */
 	fz_point origin;
-	fz_quad quad;
+#ifdef __WIIU__ // Apply this change only for Wii U builds
+	fz_quad stext_quad; // Renamed to avoid collision with system 'quad' macro
+#else
+	fz_quad quad; // Original name for other platforms
+#endif
 	float size;
 	fz_font *font;
 	fz_stext_char *next;

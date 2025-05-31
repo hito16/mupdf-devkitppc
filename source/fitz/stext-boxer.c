@@ -833,7 +833,11 @@ feed_line(fz_context *ctx, boxer_t *boxer, fz_stext_line *line)
 
 		do
 		{
+#ifdef __WIIU__
+			fz_rect bbox = fz_rect_from_quad(ch->stext_quad);
+#else
 			fz_rect bbox = fz_rect_from_quad(ch->quad);
+#endif  /* __WIIU__ */
 			float margin = ch->size/2;
 			bbox.x0 -= margin;
 			bbox.y0 -= margin;

@@ -28,7 +28,11 @@
 
 #ifdef _WIN32
 #define timegm _mkgmtime
-#endif
+#endif /* ! _WIN32*/
+#ifdef __WIIU__
+extern time_t timegm(struct tm *__tm);
+#endif /* __WIIU__ */
+
 
 #define isdigit(c) (c >= '0' && c <= '9')
 

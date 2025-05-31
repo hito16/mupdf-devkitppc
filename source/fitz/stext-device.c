@@ -421,11 +421,17 @@ add_char_to_line(fz_context *ctx, fz_stext_page *page, fz_stext_line *line, fz_m
 	}
 	a = fz_transform_vector(a, trm);
 	d = fz_transform_vector(d, trm);
-
+#ifdef __WIIU__
+	ch->stext_quad.ll = fz_make_point(p->x + d.x, p->y + d.y);
+	ch->stext_quad.ul = fz_make_point(p->x + a.x, p->y + a.y);
+	ch->stext_quad.lr = fz_make_point(q->x + d.x, q->y + d.y);
+	ch->stext_quad.ur = fz_make_point(q->x + a.x, q->y + a.y);
+#else
 	ch->quad.ll = fz_make_point(p->x + d.x, p->y + d.y);
 	ch->quad.ul = fz_make_point(p->x + a.x, p->y + a.y);
 	ch->quad.lr = fz_make_point(q->x + d.x, q->y + d.y);
 	ch->quad.ur = fz_make_point(q->x + a.x, q->y + a.y);
+#endif /* __WIIU__ */
 
 	return ch;
 }
@@ -1550,7 +1556,11 @@ fixup_bboxes_and_bidi(fz_context *ctx, fz_stext_block *block)
 			int reorder = 0;
 			for (ch = line->first_char; ch; ch = ch->next)
 			{
+#ifdef __WIIU__
+				fz_rect ch_box = fz_rect_from_quad(ch->stext_quad);
+#else 
 				fz_rect ch_box = fz_rect_from_quad(ch->quad);
+#endif /* __WIIU__ */
 				if (ch == line->first_char)
 					line->bbox = ch_box;
 				else
@@ -1612,7 +1622,11 @@ calculate_ascent(fz_point p, fz_point origin, fz_point dir)
 
 /* Create us a rect from the given quad, but extend it downwards
  * to allow for underlines that pass under the glyphs. */
+#ifdef __WIIU__
+static fz_rect expanded_rect_from_quad(fz_quad stext_quad, fz_point dir, fz_point origin, float size)
+#else
 static fz_rect expanded_rect_from_quad(fz_quad quad, fz_point dir, fz_point origin, float size)
+#endif /* __WIIU__ */
 {
 	/* Consider the two rects from A and g respectively.
 	 *
@@ -1665,9 +1679,16 @@ static fz_rect expanded_rect_from_quad(fz_quad quad, fz_point dir, fz_point orig
 	 *
 	 * So d(ul, origin) = abs(D) where D = (origin.x-ul.x).dir.y - (origin.y-ul.y).dir.x
 	 */
+
+#ifdef __WIIU__
+	float ascent = (calculate_ascent(stext_quad.ul, origin, dir) + calculate_ascent(stext_quad.ur, origin, dir)) / 2;
+	fz_point left = { stext_quad.ll.x - stext_quad.ul.x, stext_quad.ll.y - stext_quad.ul.y };
+	fz_point right = { stext_quad.lr.x - stext_quad.ur.x, stext_quad.lr.y - stext_quad.ur.y };
+#else
 	float ascent = (calculate_ascent(quad.ul, origin, dir) + calculate_ascent(quad.ur, origin, dir)) / 2;
 	fz_point left = { quad.ll.x - quad.ul.x, quad.ll.y - quad.ul.y };
 	fz_point right = { quad.lr.x - quad.ur.x, quad.lr.y - quad.ur.y };
+#endif
 	float height = (hypotf(left.x, left.y) + hypotf(right.x, right.y))/2;
 	int neg = 0;
 
@@ -1680,12 +1701,21 @@ static fz_rect expanded_rect_from_quad(fz_quad quad, fz_point dir, fz_point orig
 	height -= ascent;
 	if (neg)
 		height = -height;
+#ifdef __WIIU__
+	stext_quad.ll.x += - height * dir.y;
+	stext_quad.ll.y +=   height * dir.x;
+	stext_quad.lr.x += - height * dir.y;
+	stext_quad.lr.y +=   height * dir.x;
+
+	return fz_rect_from_quad(stext_quad);
+#else
 	quad.ll.x += - height * dir.y;
 	quad.ll.y +=   height * dir.x;
 	quad.lr.x += - height * dir.y;
 	quad.lr.y +=   height * dir.x;
 
 	return fz_rect_from_quad(quad);
+#endif /* __WIIU__ */
 }
 
 static int feq(float a,float b)
@@ -1723,8 +1753,11 @@ check_strikeout(fz_context *ctx, fz_stext_block *block, fz_point from, fz_point 
 			{
 				fz_point up;
 				float dx, dy, dot;
+#ifdef __WIIU__
+				fz_rect ch_box = expanded_rect_from_quad(ch->stext_quad, line->dir, ch->origin, ch->size);
+#else
 				fz_rect ch_box = expanded_rect_from_quad(ch->quad, line->dir, ch->origin, ch->size);
-
+#endif /* __WIIU__ */
 				if (!line_crosses_rect(from, to, ch_box))
 					continue;
 

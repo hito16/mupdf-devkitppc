@@ -113,7 +113,11 @@ whitespaceless_bbox(fz_context *ctx, fz_stext_block *block)
 			for (ch = line->first_char; ch != NULL; ch = ch->next)
 			{
 				if (ch->c != ' ')
+#ifdef __WIIU__
+					r = fz_union_rect(r, fz_rect_from_quad(ch->stext_quad));
+#else
 					r = fz_union_rect(r, fz_rect_from_quad(ch->quad));
+#endif /* __WIIU__ */
 			}
 		}
 	}

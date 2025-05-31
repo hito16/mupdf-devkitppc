@@ -698,7 +698,11 @@ trailing_line(fz_context *ctx, fz_stext_block *block, fz_stext_line *line, void 
 		if (ch->c != ' ')
 			continue;
 
+#ifdef __WIIU__
+		r = fz_rect_from_quad(ch->stext_quad);
+#else
 		r = fz_rect_from_quad(ch->quad);
+#endif
 		w = r.x1 - r.x0;
 
 		if (w < data->space_size)
@@ -851,7 +855,11 @@ justify_line(fz_context *ctx, fz_stext_block *block, fz_stext_line *line, void *
 
 	for (ch = line->first_char; ch != NULL; ch = ch->next)
 	{
+#ifdef __WIIU__
+		fz_rect r = fz_rect_from_quad(ch->stext_quad);
+#else
 		fz_rect r = fz_rect_from_quad(ch->quad);
+#endif /* __WIIU__ */
 		float min_space = ch->size * 0.15f; /* Matches SPACE_DIST from stext-device. */
 
 		if (ch->c == ' ')
@@ -932,7 +940,11 @@ justify2_line(fz_context *ctx, fz_stext_block *block, fz_stext_line *line, void 
 		if (ch->c == ' ')
 			continue;
 
+#ifdef __WIIU__
+		data->line_box = fz_union_rect(data->line_box, fz_rect_from_quad(ch->stext_quad));
+#else
 		data->line_box = fz_union_rect(data->line_box, fz_rect_from_quad(ch->quad));
+#endif /* __WIIU__*/
 	}
 
 	return 0;
@@ -951,7 +963,11 @@ text_block_marked_bbox(fz_context *ctx, fz_stext_block *block)
 		{
 			if (ch->c == ' ')
 				continue;
+#ifdef __WIIU__
+			r = fz_union_rect(r, fz_rect_from_quad(ch->stext_quad));
+#else
 			r = fz_union_rect(r, fz_rect_from_quad(ch->quad));
+#endif /* __WIIU__*/
 		}
 	}
 
@@ -1252,8 +1268,11 @@ list_line(fz_context *ctx, fz_stext_block *block, fz_stext_line *line, void *arg
 
 	for (ch = line->first_char; ch != NULL; ch = ch->next)
 	{
+#ifdef __WIIU__
+		fz_rect r = fz_rect_from_quad(ch->stext_quad);
+#else
 		fz_rect r = fz_rect_from_quad(ch->quad);
-
+#endif /* __WIIU__ */
 		if (r.x0 < data->l)
 			data->l = line->bbox.x0;
 

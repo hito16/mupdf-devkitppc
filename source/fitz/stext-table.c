@@ -963,7 +963,11 @@ walk_to_find_bounds(fz_context *ctx, fz_stext_block *first_block)
 				for (ch = line->first_char; ch != NULL; ch = ch->next)
 				{
 					if (ch->c != ' ')
-						bounds = fz_union_rect(bounds, fz_rect_from_quad(ch->quad));
+#ifdef __WIIU__
+						bounds = fz_union_rect(bounds, fz_rect_from_quad(ch->stext_quad));
+#else
+					    bounds = fz_union_rect(bounds, fz_rect_from_quad(ch->quad));
+#endif /* __WIIU__ */
 				}
 			}
 			break;
@@ -1025,9 +1029,13 @@ walk_to_find_content(fz_context *ctx, div_list *xs, div_list *ys, fz_stext_block
 						 * then send a 'weak' gap for the spaces, assuming it's sane to do so). */
 						if (last_space->next != NULL)
 						{
+#ifdef __WIIU__
+							float rpos = fz_min(ch->stext_quad.ll.x, ch->stext_quad.ul.x);
+							float lpos = fz_min(last_space->next->stext_quad.ll.x, last_space->next->stext_quad.ll.x);
+#else
 							float rpos = fz_min(ch->quad.ll.x, ch->quad.ul.x);
 							float lpos = fz_min(last_space->next->quad.ll.x, last_space->next->quad.ll.x);
-
+#endif /* __WIIU__ */
 							/* Clamp these to the bounds */
 							rpos = fz_clamp(rpos, bounds.x0, bounds.x1);
 							lpos = fz_clamp(lpos, bounds.x0, bounds.x1);
@@ -1074,8 +1082,13 @@ walk_to_find_content(fz_context *ctx, div_list *xs, div_list *ys, fz_stext_block
 					}
 					else
 					{
+#ifdef __WIIU__
+						float lpos = fz_min(ch->stext_quad.ll.x, ch->stext_quad.ul.x);
+						float rpos = fz_max(ch->stext_quad.lr.x, ch->stext_quad.ur.x);
+#else
 						float lpos = fz_min(ch->quad.ll.x, ch->quad.ul.x);
 						float rpos = fz_max(ch->quad.lr.x, ch->quad.ur.x);
+#endif /* __WIIU__ */
 						if (lpos < region.x0)
 							region.x0 = lpos;
 						if (rpos > region.x1)
@@ -1773,7 +1786,11 @@ calculate_spanned_content(fz_context *ctx, grid_walker_data *gd, fz_stext_block 
 					}
 					else
 						was_numeric = is_numeric(ch->c);
+#ifdef __WIIU__
+					duff += mark_cells_for_content(ctx, gd, fz_rect_from_quad(ch->stext_quad));
+#else
 					duff += mark_cells_for_content(ctx, gd, fz_rect_from_quad(ch->quad));
+#endif /* __WIIU__ */
 				}
 			}
 		}
@@ -2075,7 +2092,11 @@ move_contained_content(fz_context *ctx, fz_stext_page *page, fz_stext_struct *de
 
 					for (ch = line->first_char; ch != NULL; ch = next_ch)
 					{
+#ifdef __WIIU__
+						fz_rect crect = fz_rect_from_quad(ch->stext_quad);
+#else
 						fz_rect crect = fz_rect_from_quad(ch->quad);
+#endif
 						float x = (crect.x0 + crect.x1)/2;
 						float y = (crect.y0 + crect.y1)/2;
 						next_ch = ch->next;
