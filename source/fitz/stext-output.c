@@ -50,7 +50,11 @@ scale_run(fz_context *ctx, fz_stext_block *block, float scale)
 				for (ch = line->first_char; ch; ch = ch->next)
 				{
 					ch->origin = fz_transform_point(ch->origin, m);
+#ifdef __WIIU__
+					ch->stext_quad = fz_transform_quad(ch->stext_quad, m);
+#else
 					ch->quad = fz_transform_quad(ch->quad, m);
+#endif /* __WIIU__ */
 					ch->size = ch->size * scale;
 				}
 			}
@@ -941,11 +945,19 @@ as_xml(fz_context *ctx, fz_stext_block *block, fz_output *out)
 							fz_write_printf(ctx, out, "<font name=\"%s\"", name);
 						fz_write_printf(ctx, out, " size=\"%g\">\n", size);
 					}
-					fz_write_printf(ctx, out, "<char quad=\"%g %g %g %g %g %g %g %g\" x=\"%g\" y=\"%g\" bidi=\"%d\" color=\"#%06x\" alpha=\"#%02x\" flags=\"%d\" c=\"",
+						fz_write_printf(ctx, out, "<char quad=\"%g %g %g %g %g %g %g %g\" x=\"%g\" y=\"%g\" bidi=\"%d\" color=\"#%06x\" alpha=\"#%02x\" flags=\"%d\" c=\"",
+
+#ifdef __WIIU__
+							ch->stext_quad.ul.x, ch->stext_quad.ul.y,
+							ch->stext_quad.ur.x, ch->stext_quad.ur.y,
+							ch->stext_quad.ll.x, ch->stext_quad.ll.y,
+							ch->stext_quad.lr.x, ch->stext_quad.lr.y,
+#else
 							ch->quad.ul.x, ch->quad.ul.y,
 							ch->quad.ur.x, ch->quad.ur.y,
 							ch->quad.ll.x, ch->quad.ll.y,
 							ch->quad.lr.x, ch->quad.lr.y,
+#endif /* __WIIU__ */
 							ch->origin.x, ch->origin.y,
 							ch->bidi,
 							ch->argb & 0xFFFFFF,

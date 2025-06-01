@@ -84,8 +84,13 @@ static int find_closest_in_line(fz_stext_line *line, int idx, fz_point q)
 
 	// Compute mid-line from quads!
 	fz_point p1 = fz_make_point(
+#ifdef __WIIU__
+		(line->first_char->stext_quad.ll.x + line->first_char->stext_quad.ul.x) / 2,
+		(line->first_char->stext_quad.ll.y + line->first_char->stext_quad.ul.y) / 2
+#else
 		(line->first_char->quad.ll.x + line->first_char->quad.ul.x) / 2,
 		(line->first_char->quad.ll.y + line->first_char->quad.ul.y) / 2
+#endif /* __WIIU__ */
 	);
 
 	// Signed distance perpendicular mid-line (positive is below)
@@ -99,13 +104,23 @@ static int find_closest_in_line(fz_stext_line *line, int idx, fz_point q)
 	{
 		if (ch->bidi & 1)
 		{
+#ifdef __WIIU__
+			d1 = fz_abs(linedist(ch->stext_quad.lr, hdir, q));
+			d2 = fz_abs(linedist(ch->stext_quad.ll, hdir, q));
+#else
 			d1 = fz_abs(linedist(ch->quad.lr, hdir, q));
 			d2 = fz_abs(linedist(ch->quad.ll, hdir, q));
+#endif /* __WIIU__ */
 		}
 		else
 		{
-			d1 = fz_abs(linedist(ch->quad.ll, hdir, q));
-			d2 = fz_abs(linedist(ch->quad.lr, hdir, q));
+#ifdef __WIIU__
+			d1 = fz_abs(linedist(ch->stext_quad.ll, hdir, q));
+			d2 = fz_abs(linedist(ch->stext_quad.lr, hdir, q));
+#else
+			d1 = fz_abs(linedist(ch->quad.lr, hdir, q));
+			d2 = fz_abs(linedist(ch->quad.ll, hdir, q));
+#endif /* __WIIU__ */
 		}
 
 		if (d1 < closest_dist)
@@ -148,12 +163,22 @@ static int find_closest_in_page(fz_stext_page *page, fz_point q)
 
 			// Compute mid-line from quads!
 			fz_point p1 = fz_make_point(
+#ifdef __WIIU__
+				(line->first_char->stext_quad.ll.x + line->first_char->stext_quad.ul.x) / 2,
+				(line->first_char->stext_quad.ll.y + line->first_char->stext_quad.ul.y) / 2
+#else
 				(line->first_char->quad.ll.x + line->first_char->quad.ul.x) / 2,
 				(line->first_char->quad.ll.y + line->first_char->quad.ul.y) / 2
+#endif
 			);
 			fz_point p2 = fz_make_point(
+#ifdef __WIIU__
+				(line->last_char->stext_quad.lr.x + line->last_char->stext_quad.ur.x) / 2,
+				(line->last_char->stext_quad.lr.y + line->last_char->stext_quad.ur.y) / 2
+#else
 				(line->last_char->quad.lr.x + line->last_char->quad.ur.x) / 2,
 				(line->last_char->quad.lr.y + line->last_char->quad.ur.y) / 2
+#endif
 			);
 
 			// Signed distance perpendicular mid-line (positive is below)
@@ -297,8 +322,13 @@ fz_snap_selection(fz_context *ctx, fz_stext_page *page, fz_point *a, fz_point *b
 						|| (mode == FZ_SELECT_WORDS && (pc == ' ' || pc == '\n'))
 						|| (mode == FZ_SELECT_LINES && (pc == '\n')))
 					{
+#ifdef __WIIU__
+						handles.ll = ch->stext_quad.ll;
+						handles.ul = ch->stext_quad.ul;
+#else
 						handles.ll = ch->quad.ll;
 						handles.ul = ch->quad.ul;
+#endif /* __WIIU__ */
 						*a = ch->origin;
 					}
 				}
@@ -307,16 +337,27 @@ fz_snap_selection(fz_context *ctx, fz_stext_page *page, fz_point *a, fz_point *b
 					if (mode == FZ_SELECT_CHARS
 						|| (mode == FZ_SELECT_WORDS && (ch->c == ' ')))
 					{
+#ifdef __WIIU__
+						handles.lr = ch->stext_quad.ll;
+						handles.ur = ch->stext_quad.ul;
+#else
 						handles.lr = ch->quad.ll;
 						handles.ur = ch->quad.ul;
+#endif /* __WIIU__ */
 						*b = ch->origin;
 						return handles;
 					}
 					if (!ch->next)
 					{
+#ifdef __WIIU__
+						handles.lr = ch->stext_quad.lr;
+						handles.ur = ch->stext_quad.ur;
+						*b = ch->stext_quad.lr;
+#else
 						handles.lr = ch->quad.lr;
 						handles.ur = ch->quad.ur;
 						*b = ch->quad.lr;
+#endif /* __WIIU__ */
 						return handles;
 					}
 				}
@@ -361,6 +402,34 @@ static void on_highlight_char(fz_context *ctx, void *arg, fz_stext_line *line, f
 	fz_point dir = line->dir;
 
 	// Skip zero-extent quads
+#ifdef __WIIU__
+	if (same_point(ch->stext_quad.ll, ch->stext_quad.lr))
+		return;
+
+	if (hits->len > 0)
+	{
+		fz_quad *end = &hits->box[hits->len-1];
+
+		if (is_near(hfuzz, vfuzz, dir, end->lr, ch->stext_quad.ll, ch->stext_quad.lr) &&
+			is_near(hfuzz, vfuzz, dir, end->ur, ch->stext_quad.ul, ch->stext_quad.ur))
+		{
+			end->ur = ch->stext_quad.ur;
+			end->lr = ch->stext_quad.lr;
+			return;
+		}
+
+		if (is_near(hfuzz, vfuzz, dir, end->ll, ch->stext_quad.lr, ch->stext_quad.ll) &&
+			is_near(hfuzz, vfuzz, dir, end->ul, ch->stext_quad.ur, ch->stext_quad.ul))
+		{
+			end->ul = ch->stext_quad.ul;
+			end->ll = ch->stext_quad.ll;
+			return;
+		}
+	}
+
+	if (hits->len < hits->cap)
+		hits->box[hits->len++] = ch->stext_quad;
+#else
 	if (same_point(ch->quad.ll, ch->quad.lr))
 		return;
 
@@ -387,6 +456,7 @@ static void on_highlight_char(fz_context *ctx, void *arg, fz_stext_line *line, f
 
 	if (hits->len < hits->cap)
 		hits->box[hits->len++] = ch->quad;
+#endif
 }
 
 static void on_highlight_line(fz_context *ctx, void *arg, fz_stext_line *line)
@@ -488,7 +558,11 @@ fz_copy_rectangle(fz_context *ctx, fz_stext_page *page, fz_rect area, int crlf)
 				int line_had_text = 0;
 				for (ch = line->first_char; ch; ch = ch->next)
 				{
+#ifdef __WIIU__
+					fz_rect r = fz_rect_from_quad(ch->stext_quad);
+#else
 					fz_rect r = fz_rect_from_quad(ch->quad);
+#endif /* __WIIU__ */
 					if (!fz_is_empty_rect(fz_intersect_rect(r, area)))
 					{
 						line_had_text = 1;
@@ -602,6 +676,16 @@ static int hit_char(fz_context *ctx, struct search_data *hits, fz_stext_line *li
 	if (hits->quad_fill > 0 && !is_at_start)
 	{
 		fz_quad *end = &hits->quads[hits->quad_fill-1];
+#ifdef __WIIU__
+		if (hdist(&line->dir, &end->lr, &ch->stext_quad.ll) < hfuzz
+			&& vdist(&line->dir, &end->lr, &ch->stext_quad.ll) < vfuzz
+			&& hdist(&line->dir, &end->ur, &ch->stext_quad.ul) < hfuzz
+			&& vdist(&line->dir, &end->ur, &ch->stext_quad.ul) < vfuzz)
+		{
+			/* Yes */
+			end->ur = ch->stext_quad.ur;
+			end->lr = ch->stext_quad.lr;
+#else
 		if (hdist(&line->dir, &end->lr, &ch->quad.ll) < hfuzz
 			&& vdist(&line->dir, &end->lr, &ch->quad.ll) < vfuzz
 			&& hdist(&line->dir, &end->ur, &ch->quad.ul) < hfuzz
@@ -610,6 +694,7 @@ static int hit_char(fz_context *ctx, struct search_data *hits, fz_stext_line *li
 			/* Yes */
 			end->ur = ch->quad.ur;
 			end->lr = ch->quad.lr;
+#endif /* __WIIU__ */
 			return 0;
 		}
 	}
@@ -637,7 +722,11 @@ static int hit_char(fz_context *ctx, struct search_data *hits, fz_stext_line *li
 		}
 		hits->max_quads = newmax;
 	}
+#ifdef __WIIU__
+	hits->quads[hits->quad_fill++] = ch->stext_quad;
+#else
 	hits->quads[hits->quad_fill++] = ch->quad;
+#endif /* WIIU */
 	hits->count_quads++;
 
 	return 0;

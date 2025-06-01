@@ -971,6 +971,18 @@ static void ffi_pushrect(js_State *J, fz_rect rect)
 
 static fz_quad ffi_toquad(js_State *J, int idx)
 {
+#ifdef __WIIU__
+	fz_quad stext_quad;
+	js_getindex(J, idx, 0); stext_quad.ul.x = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 1); stext_quad.ul.y = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 2); stext_quad.ur.x = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 3); stext_quad.ur.y = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 4); stext_quad.ll.x = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 5); stext_quad.ll.y = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 6); stext_quad.lr.x = js_tonumber(J, -1); js_pop(J, 1);
+	js_getindex(J, idx, 7); stext_quad.lr.y = js_tonumber(J, -1); js_pop(J, 1);
+	return stext_quad;
+#else
 	fz_quad quad;
 	js_getindex(J, idx, 0); quad.ul.x = js_tonumber(J, -1); js_pop(J, 1);
 	js_getindex(J, idx, 1); quad.ul.y = js_tonumber(J, -1); js_pop(J, 1);
@@ -981,13 +993,28 @@ static fz_quad ffi_toquad(js_State *J, int idx)
 	js_getindex(J, idx, 6); quad.lr.x = js_tonumber(J, -1); js_pop(J, 1);
 	js_getindex(J, idx, 7); quad.lr.y = js_tonumber(J, -1); js_pop(J, 1);
 	return quad;
+#endif /* __WIIU__ */
 }
 
 #endif /* FZ_ENABLE_PDF */
 
+#ifdef __WIIU__
+static void ffi_pushquad(js_State *J, fz_quad stext_quad)
+#else
 static void ffi_pushquad(js_State *J, fz_quad quad)
+#endif /* __WIIU__ */
 {
 	js_newarray(J);
+#ifdef __WIIU__
+	js_pushnumber(J, stext_quad.ul.x); js_setindex(J, -2, 0);
+	js_pushnumber(J, stext_quad.ul.y); js_setindex(J, -2, 1);
+	js_pushnumber(J, stext_quad.ur.x); js_setindex(J, -2, 2);
+	js_pushnumber(J, stext_quad.ur.y); js_setindex(J, -2, 3);
+	js_pushnumber(J, stext_quad.ll.x); js_setindex(J, -2, 4);
+	js_pushnumber(J, stext_quad.ll.y); js_setindex(J, -2, 5);
+	js_pushnumber(J, stext_quad.lr.x); js_setindex(J, -2, 6);
+	js_pushnumber(J, stext_quad.lr.y); js_setindex(J, -2, 7);
+#else
 	js_pushnumber(J, quad.ul.x); js_setindex(J, -2, 0);
 	js_pushnumber(J, quad.ul.y); js_setindex(J, -2, 1);
 	js_pushnumber(J, quad.ur.x); js_setindex(J, -2, 2);
@@ -996,6 +1023,7 @@ static void ffi_pushquad(js_State *J, fz_quad quad)
 	js_pushnumber(J, quad.ll.y); js_setindex(J, -2, 5);
 	js_pushnumber(J, quad.lr.x); js_setindex(J, -2, 6);
 	js_pushnumber(J, quad.lr.y); js_setindex(J, -2, 7);
+#endif /* __WIIU__ */
 }
 
 static fz_irect ffi_toirect(js_State *J, int idx)
@@ -4522,7 +4550,11 @@ typedef struct {
 	int error;
 } search_state;
 
+#ifdef __WIIU__
+static int hit_callback(fz_context *ctx, void *opaque, int quads, fz_quad *stext_quad)
+#else
 static int hit_callback(fz_context *ctx, void *opaque, int quads, fz_quad *quad)
+#endif /* __WIIU__ */
 {
 	search_state *state = (search_state *) opaque;
 	int i;
@@ -4539,7 +4571,11 @@ static int hit_callback(fz_context *ctx, void *opaque, int quads, fz_quad *quad)
 	js_newarray(state->J);
 	for (i = 0; i < quads; ++i)
 	{
+#ifdef __WIIU__
+		ffi_pushquad(state->J, stext_quad[i]);
+#else
 		ffi_pushquad(state->J, quad[i]);
+#endif /* __WIIU__ */
 		js_setindex(state->J, -2, i);
 	}
 	js_setindex(state->J, -2, state->hits++);
@@ -6269,7 +6305,11 @@ stext_walk(js_State *J, fz_stext_block *block)
 						ffi_pushpoint(J, ch->origin);
 						ffi_pushfont(J, ch->font);
 						js_pushnumber(J, ch->size);
+#ifdef __WIIU__
+						ffi_pushquad(J, ch->stext_quad);
+#else
 						ffi_pushquad(J, ch->quad);
+#endif /* __WIIU__ */
 						ffi_pushrgb(J, ch->argb);
 						js_call(J, 6);
 						js_pop(J, 1);
