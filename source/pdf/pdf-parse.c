@@ -30,7 +30,7 @@
 #define timegm _mkgmtime
 #endif /* ! _WIN32*/
 #ifdef __WIIU__
-extern time_t timegm(struct tm *__tm);
+extern time_t timegm(struct tm *__tm); // <- libutil does not exist on WiiU
 #endif /* __WIIU__ */
 
 
