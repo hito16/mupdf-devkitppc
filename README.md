@@ -6,6 +6,19 @@ libmupdf.a and lubmupdf-third.a compile for devkitpro wiiu environment
 
 Still encountering linking issues.  (see project hito15/SDLReader)
 
+## forking 
+I did not forking the submodules.  If you also fork this repo, do the following
+
+* fork the repo
+  - eg your-user-id/mupdf-devkitppc
+* In your fork, in the github UI
+  - edit .gitmodules
+  - update the third-party urls with https://github.com/ArtifexSoftware
+  - save, commit, push to your fork
+* remove your local fork directory
+* do a recursive checkout
+  - gh repo clone your-user-id/mupdf-devkitppc -- --recurse
+  
 ## Compiling
 
 In a devkitpro wiiu environment
