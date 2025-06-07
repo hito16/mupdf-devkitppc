@@ -14,7 +14,11 @@ In a devkitpro wiiu environment
 # cd /project
 # ./make_wiiu.sh
 ```
-
+Files will be in 
+```
+build/release/libmupdf-third.a
+build/release/libmupdf.a
+```
 ## Linking
 
 to statically link with your project on a devkitpro wiiu environment, 
