@@ -49,3 +49,24 @@ Linking required:
 
 * wrappers to address undefined references.
 
+## Open concerns
+
+### Fonts
+mupdf copies compiled versions of fonts into the library
+```
+    OBJCOPY build/release/resources/fonts/sil/CharisSIL-BoldItalic.cff.o
+    OBJCOPY build/release/resources/fonts/sil/CharisSIL-Italic.cff.o
+    OBJCOPY build/release/resources/fonts/sil/CharisSIL.cff.o
+    AR build/release/libmupdf.a
+    ...
+```
+
+OBJCOPY_CMD may be using linker options that may not be compatible with the crosscompiler.
+
+```
+Makefile:OBJCOPY_CMD = $(QUIET_OBJCOPY) $(MKTGTDIR) ; $(LD) -r -b binary -z noexecstack -o $@ $<
+Makefile:  $(OUT)/%.cff.o : %.cff ; $(OBJCOPY_CMD)
+Makefile:  $(OUT)/%.otf.o : %.otf ; $(OBJCOPY_CMD)
+Makefile:  $(OUT)/%.ttf.o : %.ttf ; $(OBJCOPY_CMD)
+Makefile:  $(OUT)/%.ttc.o : %.ttc ; $(OBJCOPY_CMD)
+```
